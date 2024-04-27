@@ -5,8 +5,7 @@
 <h3 align="center">Open-source LLM Powered Code Review Tool</h3>
 <p align="center">
   <a href="/">
-    <img src="https://img.shields.io/github/stars/darshpanchal/codevet
-    " alt="GitHub Stars" />
+    <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/darshpanchal/codevet">
   </a>
 </p>
 
