@@ -7,6 +7,9 @@
   <a href="/">
     <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/darshpanchal/codevet">
   </a>
+  <a href="/">
+    <img alt="GitHub Issues or Pull Requests" src="https://img.shields.io/github/issues/darshpanchal/codevet">
+  </a>
 </p>
 
 CodeVet is an LLM powered git pull request review tool for Gitea and GitHub. Supports OpenAI and self-hosted open-source OpenAI compatible servers like [llama-cpp-python](https://github.com/abetlen/llama-cpp-python).
