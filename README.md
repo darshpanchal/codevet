@@ -12,6 +12,8 @@
   </a>
 </p>
 
+# CodeVet
+
 CodeVet is an LLM powered git pull request review tool for Gitea and GitHub. Supports OpenAI and self-hosted open-source OpenAI compatible servers like [llama-cpp-python](https://github.com/abetlen/llama-cpp-python).
 
 ### Working
