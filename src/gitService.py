@@ -1,5 +1,5 @@
 import httpx
-from llmService import LLMService
+from .llmService import LLMService
 
 class GitService:
     def __init__(self, config):

@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from configparser import ConfigParser
-from gitService import GitHubService, GiteaService
+from src.gitService import GitHubService, GiteaService
 import json
-from util import getGitandEventType
+from src.util import getGitandEventType
 
 config = ConfigParser()
 config.read("config.ini")

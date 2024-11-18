@@ -32,20 +32,22 @@ Build the container:
 ```bash
 docker build -t codevet .
 ```
-Run the container: (change OPENAI_API_KEY as per your OpenAI API key)
+Run the container: (change API_KEY as per your OpenAI API key/Gemini API Key)
 ```bash
-docker run -d --name codevet -p 8001:8001 -v $PWD:/home -e UVICORN_HOST=0.0.0.0 -e OPENAI_API_KEY=sk-xxxx codevet
+docker run -d --name codevet -p 8001:8001 -v $PWD:/home -e UVICORN_HOST=0.0.0.0 -e API_KEY=sk-xxxx codevet
 ```
 
 Once the containers are up, create a webhook in Gitea repo for `http://<host-server>:8001/review`
 
 ### OpenAI Compatible Models
 
+>**Update** - Now Gemini Models support OpenAI specifications (Experimental Support). You can use the free models for your personal use. Visit [Gemini Docs](https://ai.google.dev/gemini-api/docs/openai) for usage information, all you need is an API Key, base url and model name (for Gemini 1.5 Flash use 'gemini-1.5-flash').
+
 If you prefer using self-hosted models. You can use any OpenAI compatible server like [llama-cpp-python](https://github.com/abetlen/llama-cpp-python).
 
 > **Checkout my other repo [llm-server](https://github.com/darshpanchal/llm-server), its a dockerized OpenAI compatible server based on [llama-cpp-python](https://github.com/abetlen/llama-cpp-python)**
 
-Once you have server deployed, modify `config.ini` and change `baseUrl` (under `LLMSERVER`) value to the server link. 
+Once you have server deployed, modify `config.ini` and change `baseUrl` (under `LLMCONFIG`) value to the server link. 
 
 ### Limitations
 - So far it only works on `opened` event for PR.
