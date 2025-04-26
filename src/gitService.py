@@ -1,85 +1,127 @@
 import httpx
-from .llmService import LLMService
+from abc import ABC, abstractmethod
+import os
 
-class GitService:
-    def __init__(self, config):
+class GitService(ABC):
+    """
+    Abstract base class for Git services.
+    Defines the interface for interacting with Git providers.
+    """
+    def __init__(self, config, llm_service):
         self.config = config
+        self.llm_service = llm_service
 
-    def prCreated(self):
+    @abstractmethod
+    def get_pr_diff(self):
+        """Fetches the pull request diff."""
         pass
 
-    def getPrDiff(self):
+    @abstractmethod
+    def post_review_on_git(self, comment_text):
+        """Posts a review comment on the pull request."""
         pass
 
-    def postReviewOnGit(self, review):
-        pass
+    def pr_created(self):
+        """
+        Handles the PR creation event.
+        Fetches the diff, gets a review from the LLM, and posts the review.
+        """
+        diff_data = self.get_pr_diff()
+        review = self.llm_service.getReviewFromLLM(diff_data)
+        response = self.post_review_on_git(review)
+        return response
 
 
 class GiteaService(GitService):
-    def __init__(self, config, requestData):
-        super().__init__(config)
-        self.owner = requestData["repository"]["owner"]["username"]
-        self.repo = requestData["repository"]["name"]
-        self.index = requestData["pull_request"]["id"]
-        self.headers = {'authorization' : "Basic {userToken}".format(userToken = self.config['GITEA']['userToken'])}
+    """
+    Service class for interacting with Gitea.
+    """
+    def __init__(self, config, llm_service, request_data):
+        super().__init__(config, llm_service)
+        self.owner = request_data["repository"]["owner"]["username"]
+        self.repo = request_data["repository"]["name"]
+        self.index = request_data["pull_request"]["id"]
+        self.headers = {
+            'authorization': f"Basic {os.environ.get('GITEA_USER_TOKEN')}",
+        }
 
-    def prCreated(self):
-        diffData = self.getPrDiff()
-        review = LLMService(self.config).getReviewFromLLM(diffData)
-        response = self.postReviewOnGit(review)
-        return response
-
-    def getPrDiff(self):
-        url = self.config["GITEA"]['diffUrl'].format(baseUrl = self.config['GITEA']['baseUrl'], owner = self.owner,repo = self.repo, index = str(self.index))
+    def get_pr_diff(self):
+        """
+        Fetches the pull request diff from Gitea.
+        """
+        url = self.config["GITEA"]['diffUrl'].format(
+            baseUrl=self.config['GITEA']['baseUrl'],
+            owner=self.owner,
+            repo=self.repo,
+            index=str(self.index)
+        )
         response = httpx.get(url, headers=self.headers, verify=False)
         if response.status_code == 200:
-            diffData = response.text
+            return response.text
         else:
-            self.postReviewOnGit("Failed to get PR Diff.")
-        return diffData
+            raise Exception("Failed to get PR Diff.")
 
-    def postReviewOnGit(self, commentText):
-        url = self.config["GITEA"]['issueCommentUrl'].format(baseUrl = self.config['GITEA']['baseUrl'], owner = self.owner,repo = self.repo, index = str(self.index))
-        comment = {"body" : commentText}
-        response = httpx.post(url, headers=self.headers, json = comment, verify=False)
+    def post_review_on_git(self, comment_text):
+        """
+        Posts a review comment on the Gitea pull request.
+        """
+        url = self.config["GITEA"]['issueCommentUrl'].format(
+            baseUrl=self.config['GITEA']['baseUrl'],
+            owner=self.owner,
+            repo=self.repo,
+            index=str(self.index)
+        )
+        comment = {"body": comment_text}
+        response = httpx.post(url, headers=self.headers, json=comment, verify=False)
         if response.status_code != 201:
-            raise HTTPException(status_code=500, detail="Failed to post review comment on Gitea.")
-        
+            raise Exception("Failed to post review comment on Gitea.")
         return "Posted the Review Comment to Issue"
 
 
 class GitHubService(GitService):
-    def __init__(self, config, requestData):
-        super().__init__(config)
-        self.owner = requestData["repository"]["owner"]["login"]
-        self.repo = requestData["repository"]["name"]
-        self.index = requestData["pull_request"]["number"]
-        self.headers = {'authorization' : "Bearer {accessToken}".format(accessToken = self.config['GITHUB']['accessToken']), 'X-GitHub-Api-Version': '2022-11-28'}
+    """
+    Service class for interacting with GitHub.
+    """
+    def __init__(self, config, llm_service, request_data):
+        super().__init__(config, llm_service)
+        self.owner = request_data["repository"]["owner"]["login"]
+        self.repo = request_data["repository"]["name"]
+        self.index = request_data["pull_request"]["number"]
+        self.headers = {
+            'authorization': f"Bearer {os.environ.get('GITHUB_ACCESS_TOKEN')}",
+            'X-GitHub-Api-Version': '2022-11-28'
+        }
 
-    def prCreated(self):
-        diffData = self.getPrDiff()
-        review = LLMService(self.config).getReviewFromLLM(diffData)
-        response = self.postReviewOnGit(review)
-        return response
-
-    def getPrDiff(self):
-        url = self.config["GITHUB"]['diffUrl'].format(owner = self.owner,repo = self.repo, index = str(self.index))
+    def get_pr_diff(self):
+        """
+        Fetches the pull request diff from GitHub.
+        """
+        url = self.config["GITHUB"]['diffUrl'].format(
+            owner=self.owner,
+            repo=self.repo,
+            index=str(self.index)
+        )
         response = httpx.get(url, headers=self.headers, verify=False)
         if response.status_code == 200:
-            diffUrl = response.json()['diff_url']
-            diffResponse = httpx.get(diffUrl, headers=self.headers, verify=False)
-            diffData = diffResponse.text
+            diff_url = response.json()['diff_url']
+            diff_response = httpx.get(diff_url, headers=self.headers, verify=False)
+            return diff_response.text
         else:
-            self.postReviewOnGit("Failed to get PR Diff.")
-        return diffData
+            raise Exception("Failed to get PR Diff.")
 
-    def postReviewOnGit(self, commentText):
-        headers = self.headers
+    def post_review_on_git(self, comment_text):
+        """
+        Posts a review comment on the GitHub pull request.
+        """
+        url = self.config["GITHUB"]['issueCommentUrl'].format(
+            owner=self.owner,
+            repo=self.repo,
+            index=str(self.index)
+        )
+        comment = {"body": comment_text}
+        headers = self.headers.copy()
         headers['Accept'] = 'application/vnd.github+json'
-        url = self.config["GITHUB"]['issueCommentUrl'].format(owner = self.owner,repo = self.repo, index = str(self.index))
-        comment = {"body" : commentText}
-        response = httpx.post(url, headers=headers, json = comment, verify=False)
+        response = httpx.post(url, headers=headers, json=comment, verify=False)
         if response.status_code != 201:
-            raise HTTPException(status_code=500, detail="Failed to post review comment on GitHub.")
-        
+            raise Exception("Failed to post review comment on GitHub.")
         return "Posted the Review Comment to Issue"
